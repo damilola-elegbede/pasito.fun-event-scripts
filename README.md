@@ -19,6 +19,8 @@ This script automates the process of creating Facebook events from Pasito.fun ev
 - Facebook Page access token with `pages_manage_events` permission
 - Facebook Page ID
 
+> **Note**: This script is independent of Django and does not require Django to be installed. If you're working with Django projects in the same environment, make sure to activate the correct virtual environment before running this script.
+
 ## Installation
 
 1. Clone the repository:
