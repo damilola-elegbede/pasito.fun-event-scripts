@@ -72,18 +72,29 @@ python create_fb_event.py blue-ice-bachata-night-r14by --preview
 ### Process Events from a Series
 
 ```bash
-python create_fb_event.py --series <series_id> [--prefix <prefix>] [--preview]
+python create_fb_event.py -s <series_id> [-p]
 
 # Example:
-python create_fb_event.py --series boulder-salsa-bachata-rueda-wc-swing-social-xd9r4 --preview
+python create_fb_event.py -s boulder-salsa-bachata-rueda-wc-swing-social-xd9r4 -p
 ```
 
 ### Command-line Options
 
-- `--preview`: Preview the Facebook API payload without creating events
-- `--clean`: Clean up temporary files after preview mode
-- `--series`: Process all events in a series (provide series ID)
-- `--prefix`: Filter event IDs by prefix when using --series
+- `-p, --preview`: Preview the Facebook API payload without creating events
+- `-c, --clean`: Clean up temporary files after preview mode
+- `-s, --series`: Process all events in a series (provide series ID)
+
+### Usage Examples
+
+Process a single event with preview:
+```bash
+python create_fb_event.py blue-ice-bachata-night-r14by -p
+```
+
+Process a series with preview and cleanup:
+```bash
+python create_fb_event.py -s boulder-salsa-bachata-rueda-wc-swing-social-xd9r4 -p -c
+```
 
 ## How It Works
 

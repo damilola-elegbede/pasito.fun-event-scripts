@@ -26,7 +26,7 @@ Usage:
    python create_fb_event.py blue-ice-bachata-night-r14by --preview
 
 2. Process all events in a series:
-   python create_fb_event.py --series <series_id> [--prefix <prefix>] [--preview]
+   python create_fb_event.py --series <series_id> [--preview]
    
    Example:
    python create_fb_event.py --series boulder-salsa-bachata-rueda-wc-swing-social-xd9r4 --preview
@@ -34,7 +34,6 @@ Usage:
 Options:
   --preview    Preview the Facebook API payload without creating the event
   --series     Process all events from a series
-  --prefix     Filter series events by prefix (optional)
 
 Features:
 - Automatically scrapes event details from Pasito
@@ -106,25 +105,20 @@ def upload_photo_for_event(image_path):
         print(f"\n❌ Error: Failed to upload photo. Status Code: {e.response.status_code}, Response: {e.response.text}")
         return None
 
-def scrape_series_for_event_ids(series_id, prefix):
-    """Scrapes a series page and filters for events with a specific prefix."""
+def scrape_series_for_event_ids(series_id):
+    """Scrapes a series page for event IDs."""
     url = f"{BASE_PASITO_URL}/es/{series_id}"
-    print(f"\n Scraping series page {url}...")
+    print(f"\nScraping series page {url}...")
     try:
         response = requests.get(url, timeout=10)
         response.raise_for_status()
         soup = BeautifulSoup(response.content, 'html.parser')
         event_links = soup.select('a[href^="/e/"]')
-        all_event_ids = [link['href'].replace('/e/', '') for link in event_links]
-        print(f" Found {len(all_event_ids)} total events. Filtering for prefix: '{prefix}'")
-        filtered_ids = [eid for eid in all_event_ids if eid.startswith(prefix)]
-        if not filtered_ids:
-            print(f" Warning: No event IDs matched the prefix '{prefix}'.")
-            return []
-        print(f" Found {len(filtered_ids)} matching event IDs: {', '.join(filtered_ids)}")
-        return filtered_ids
+        event_ids = [link['href'].replace('/e/', '') for link in event_links]
+        print(f"Found {len(event_ids)} events: {', '.join(event_ids)}")
+        return event_ids
     except requests.RequestException as e:
-        print(f" Error: Could not fetch series page {series_id}. {e}")
+        print(f"Error: Could not fetch series page {series_id}. {e}")
         return []
 
 def find_location_links(soup):
@@ -715,10 +709,9 @@ def main():
     """Main function to handle multiple event IDs."""
     parser = argparse.ArgumentParser(description='Create Facebook events from Pasito event IDs')
     parser.add_argument('event_ids', nargs='*', help='One or more Pasito event IDs to process')
-    parser.add_argument('--series', help='Series ID to scrape for event IDs')
-    parser.add_argument('--prefix', help='Prefix to filter event IDs from series')
-    parser.add_argument('--preview', action='store_true', help='Preview API payload without creating events')
-    parser.add_argument('--clean', action='store_true', help='Clean up temporary files after preview')
+    parser.add_argument('-s', '--series', help='Series ID to scrape for event IDs')
+    parser.add_argument('-p', '--preview', action='store_true', help='Preview API payload without creating events')
+    parser.add_argument('-c', '--clean', action='store_true', help='Clean up temporary files after preview')
     args = parser.parse_args()
     
     # Check for required environment variables (skip if preview)
@@ -731,7 +724,7 @@ def main():
     
     # If series ID is provided, scrape for event IDs
     if args.series:
-        event_ids.extend(scrape_series_for_event_ids(args.series, args.prefix or ""))
+        event_ids.extend(scrape_series_for_event_ids(args.series))
     
     # Add any explicitly provided event IDs
     event_ids.extend(args.event_ids)
