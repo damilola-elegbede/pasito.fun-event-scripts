@@ -1,3 +1,54 @@
+"""
+Facebook Event Creator for Pasito Events
+
+This script creates Facebook events from Pasito event pages. It can process individual events
+or entire series of events.
+
+Setup:
+1. Install dependencies:
+   pip install -r requirements.txt
+
+2. Set environment variables:
+   - FB_PAGE_ID: Your Facebook Page ID
+   - FB_PAGE_ACCESS_TOKEN: Your Facebook Page Access Token
+   
+   You can set these in your shell:
+   export FB_PAGE_ID="your_page_id"
+   export FB_PAGE_ACCESS_TOKEN="your_access_token"
+   
+   Or create a .env file with these variables.
+
+Usage:
+1. Process a single event:
+   python create_fb_event.py <event_id> [--preview]
+   
+   Example:
+   python create_fb_event.py blue-ice-bachata-night-r14by --preview
+
+2. Process all events in a series:
+   python create_fb_event.py --series <series_id> [--prefix <prefix>] [--preview]
+   
+   Example:
+   python create_fb_event.py --series boulder-salsa-bachata-rueda-wc-swing-social-xd9r4 --preview
+
+Options:
+  --preview    Preview the Facebook API payload without creating the event
+  --series     Process all events from a series
+  --prefix     Filter series events by prefix (optional)
+
+Features:
+- Automatically scrapes event details from Pasito
+- Handles location details and venue information
+- Translates non-English descriptions to English
+- Adds source link to the event description
+- Supports both single events and series
+- Preview mode for testing without creating events
+
+Note: The script requires a Facebook Page Access Token with the following permissions:
+- pages_manage_events
+- pages_read_engagement
+"""
+
 import requests
 import os
 import json
@@ -613,6 +664,10 @@ def process_single_event(event_id, preview=False):
     
     # Translate description if needed
     event_data['description'] = translate_description(event_data['description'])
+    
+    # Add Pasito event link to description
+    pasito_event_link = f"{BASE_PASITO_URL}/e/{event_id}"
+    event_data['description'] += f"\n\nThis event was created from {pasito_event_link}"
     
     # Get additional details from user
     try:

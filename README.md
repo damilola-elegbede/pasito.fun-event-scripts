@@ -1,102 +1,110 @@
-# Facebook Event Creator for Pasito.fun
+# Pasito to Facebook Event Creator
 
-This script automates the process of creating Facebook events from Pasito.fun event listings. It can scrape individual events or entire series, translate descriptions if needed, and create corresponding Facebook events with proper timezone handling.
+This script automatically creates Facebook events from Pasito event pages. It can process individual events or entire series of events, making it easy to sync your dance events across platforms.
 
 ## Features
 
-- Web scraping of Pasito.fun event pages and series
-- Automatic translation of event descriptions to English
-- Timezone-aware event scheduling
-- Support for both online and physical events
-- Automatic location detection from event pages
-- Custom cover image support
-- Command-line interface for batch processing
-- Facebook Graph API integration
+- 🎯 Process single events or entire series
+- 🌐 Automatically scrapes event details from Pasito
+- 📍 Handles location details and venue information
+- 🌍 Translates non-English descriptions to English
+- 🔗 Adds source link to the event description
+- 👀 Preview mode for testing without creating events
+- 🕒 Handles timezone conversion automatically
 
 ## Prerequisites
 
 - Python 3.7 or higher
-- Facebook Page access token with `pages_manage_events` permission
-- Facebook Page ID
+- A Facebook Page with admin access
+- Facebook Page Access Token with required permissions
+- Chrome browser (for Selenium)
 
-> **Note**: This script is independent of Django and does not require Django to be installed. If you're working with Django projects in the same environment, make sure to activate the correct virtual environment before running this script.
+## Dependencies
+
+The script requires the following Python packages:
+- `requests>=2.31.0`: For making HTTP requests
+- `beautifulsoup4>=4.12.2`: For HTML parsing
+- `deep-translator>=1.11.4`: For text translation
+- `pytz>=2024.1`: For timezone handling
+- `python-dotenv>=1.0.0`: For environment variable management
+- `selenium>=4.18.1`: For web scraping
+- `webdriver-manager>=4.0.1`: For managing Chrome WebDriver
 
 ## Installation
 
 1. Clone the repository:
-```bash
-git clone [repository-url]
-cd [repository-name]
-```
+   ```bash
+   git clone https://github.com/yourusername/pasito.fun-event-scripts.git
+   cd pasito.fun-event-scripts
+   ```
 
-2. Create and activate a virtual environment:
-```bash
-python -m venv venv
-source venv/bin/activate  # On Windows: venv\Scripts\activate
-```
+2. Install dependencies:
+   ```bash
+   pip install -r requirements.txt
+   ```
 
-3. Install required packages:
-```bash
-pip install -r requirements.txt
-```
+3. Set up environment variables:
+   ```bash
+   # Set these in your shell or create a .env file
+   export FB_PAGE_ID="your_page_id"
+   export FB_PAGE_ACCESS_TOKEN="your_access_token"
+   ```
 
-4. Create a `.env` file in the project root with your Facebook credentials:
-```
-FB_PAGE_ID=your_page_id_here
-FB_PAGE_ACCESS_TOKEN=your_access_token_here
-```
+## Facebook Setup
+
+1. Create a Facebook Page if you haven't already
+2. Get your Page ID from the About section of your Facebook Page
+3. Generate a Page Access Token with the following permissions:
+   - `pages_manage_events`
+   - `pages_read_engagement`
 
 ## Usage
 
-The script can be used in several ways:
-
-### 1. Process Individual Events
+### Process a Single Event
 
 ```bash
-python create_fb_event.py -e "event_id1,event_id2,event_id3"
+python create_fb_event.py <event_id> [--preview]
+
+# Example:
+python create_fb_event.py blue-ice-bachata-night-r14by --preview
 ```
 
-### 2. Process Events from a Series
+### Process Events from a Series
 
 ```bash
-python create_fb_event.py -s "series_id" "event_prefix"
+python create_fb_event.py --series <series_id> [--prefix <prefix>] [--preview]
+
+# Example:
+python create_fb_event.py --series boulder-salsa-bachata-rueda-wc-swing-social-xd9r4 --preview
 ```
 
-You can process multiple series:
-```bash
-python create_fb_event.py -s "series1_id" "prefix1" -s "series2_id" "prefix2"
-```
+### Command-line Options
 
-### 3. Use a Custom Cover Image
+- `--preview`: Preview the Facebook API payload without creating the event
+- `--series`: Process all events from a series
+- `--prefix`: Filter series events by prefix (optional)
 
-```bash
-python create_fb_event.py -e "event_id" -c "path/to/cover/image.jpg"
-```
+## How It Works
 
-### 4. Combine Options
+1. The script scrapes event details from Pasito using Selenium
+2. Extracts key information:
+   - Event name and description
+   - Date and time
+   - Location details
+   - Venue information
+3. Translates non-English content to English
+4. Adds a source link to the event description
+5. Creates the event on Facebook using the Graph API
 
-```bash
-python create_fb_event.py -e "event_id1,event_id2" -s "series_id" "prefix" -c "cover.jpg"
-```
+## Output
 
-## Command Line Arguments
+The script provides detailed output about:
+- Scraping progress
+- Location detection
+- Event creation status
+- Any errors or warnings
 
-- `-e, --events`: Comma-separated list of event IDs to process
-- `-s, --series`: Process events from a series page (requires series ID and event prefix)
-- `-c, --cover`: Path to a local cover image file to use for all events
-
-## Environment Variables
-
-- `FB_PAGE_ID`: Your Facebook Page ID
-- `FB_PAGE_ACCESS_TOKEN`: Your Facebook Page access token with `pages_manage_events` permission
-
-## Dependencies
-
-- requests: For making HTTP requests
-- beautifulsoup4: For web scraping
-- googletrans: For text translation
-- pytz: For timezone handling
-- python-dotenv: For environment variable management
+In preview mode, it saves the Facebook API payload to `facebook_api_preview.txt` for review.
 
 ## Error Handling
 
@@ -107,16 +115,11 @@ The script includes comprehensive error handling for:
 - Translation failures
 - Invalid timezone inputs
 - Facebook API errors
-- Cover image upload failures
 - Series scraping errors
 
 ## Contributing
 
-1. Fork the repository
-2. Create a feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+Feel free to submit issues and enhancement requests!
 
 ## License
 

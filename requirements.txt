@@ -1,5 +1,7 @@
 requests>=2.31.0
 beautifulsoup4>=4.12.2
-googletrans==3.1.0a0
+deep-translator>=1.11.4
 pytz>=2024.1
-python-dotenv>=1.0.0 
+python-dotenv>=1.0.0
+selenium>=4.18.1
+webdriver-manager>=4.0.1 
