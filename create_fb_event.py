@@ -708,15 +708,30 @@ def process_single_event(event_id, preview=False, clean=False):
 def main():
     """Main function to handle multiple event IDs."""
     parser = argparse.ArgumentParser(description='Create Facebook events from Pasito event IDs')
-    parser.add_argument('event_ids', nargs='*', help='One or more Pasito event IDs to process')
-    parser.add_argument('-s', '--series', help='Series ID to scrape for event IDs')
+    
+    # Create a mutually exclusive group for event sources
+    event_source = parser.add_mutually_exclusive_group(required=True)
+    event_source.add_argument('-e', '--events', nargs='+', help='One or more Pasito event IDs to process')
+    event_source.add_argument('-s', '--series', help='Series ID to scrape for event IDs')
+    
+    # Other optional arguments
     parser.add_argument('-p', '--preview', action='store_true', help='Preview API payload without creating events')
     parser.add_argument('-c', '--clean', action='store_true', help='Clean up temporary files after preview')
+    parser.add_argument('--page-id', help='Facebook Page ID (overrides FB_PAGE_ID environment variable)')
+    parser.add_argument('--access-token', help='Facebook Page Access Token (overrides FB_PAGE_ACCESS_TOKEN environment variable)')
     args = parser.parse_args()
+    
+    # Get Facebook credentials from args or environment variables
+    global FB_PAGE_ID, FB_PAGE_ACCESS_TOKEN
+    if args.page_id:
+        FB_PAGE_ID = args.page_id
+    if args.access_token:
+        FB_PAGE_ACCESS_TOKEN = args.access_token
     
     # Check for required environment variables (skip if preview)
     if not args.preview and (not FB_PAGE_ID or not FB_PAGE_ACCESS_TOKEN):
-        print("❌ Error: FB_PAGE_ID and FB_PAGE_ACCESS_TOKEN environment variables must be set")
+        print("❌ Error: Facebook credentials required. Set FB_PAGE_ID and FB_PAGE_ACCESS_TOKEN environment variables")
+        print("   or provide them as command-line arguments: --page-id and --access-token")
         return
     
     # Get event IDs to process
@@ -727,10 +742,11 @@ def main():
         event_ids.extend(scrape_series_for_event_ids(args.series))
     
     # Add any explicitly provided event IDs
-    event_ids.extend(args.event_ids)
+    if args.events:
+        event_ids.extend(args.events)
     
     if not event_ids:
-        print("❌ No event IDs to process")
+        print("❌ No event IDs found to process")
         return
     
     # Process each event ID

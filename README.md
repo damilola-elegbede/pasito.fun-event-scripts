@@ -80,20 +80,38 @@ python create_fb_event.py -s boulder-salsa-bachata-rueda-wc-swing-social-xd9r4 -
 
 ### Command-line Options
 
+Required (one of):
+- `-e, --events`: One or more Pasito event IDs to process
+- `-s, --series`: Process all events in a series (provide series ID)
+
+Optional:
 - `-p, --preview`: Preview the Facebook API payload without creating events
 - `-c, --clean`: Clean up temporary files after preview mode
-- `-s, --series`: Process all events in a series (provide series ID)
+- `--page-id`: Facebook Page ID (overrides FB_PAGE_ID environment variable)
+- `--access-token`: Facebook Page Access Token (overrides FB_PAGE_ACCESS_TOKEN environment variable)
+
+Note: You must provide either `-e/--events` or `-s/--series`, but not both.
 
 ### Usage Examples
 
 Process a single event with preview:
 ```bash
-python create_fb_event.py blue-ice-bachata-night-r14by -p
+python create_fb_event.py -e blue-ice-bachata-night-r14by -p
+```
+
+Process multiple events:
+```bash
+python create_fb_event.py -e event-id-1 event-id-2 event-id-3
 ```
 
 Process a series with preview and cleanup:
 ```bash
 python create_fb_event.py -s boulder-salsa-bachata-rueda-wc-swing-social-xd9r4 -p -c
+```
+
+Create an event with credentials provided via command line:
+```bash
+python create_fb_event.py -e event-id --page-id "123456789" --access-token "your_token_here"
 ```
 
 ## How It Works
