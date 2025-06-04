@@ -7,8 +7,10 @@ from bs4 import BeautifulSoup
 from googletrans import Translator
 from datetime import datetime, timedelta
 import pytz
+from dotenv import load_dotenv
 
 # --- CONFIGURATION ---
+load_dotenv()
 FB_PAGE_ID = os.getenv("FB_PAGE_ID")
 FB_PAGE_ACCESS_TOKEN = os.getenv("FB_PAGE_ACCESS_TOKEN")
 GRAPH_API_VERSION = "v20.0"
@@ -86,7 +88,7 @@ def scrape_pasito_event(event_id):
         description = about_header.find_next_sibling('p').get_text(strip=True) if about_header else ""
         cover_url = soup.find('meta', property='og:image')['content']
         
-        # *** NEW: Scrape location information ***
+        # Scrape location information
         location = None
         location_tag = soup.find('a', href=lambda href: href and "maps.google.com" in href)
         if location_tag:
@@ -151,7 +153,7 @@ def get_event_details_from_user(event_name, scraped_location=None):
     start_time_utc = start_datetime_local.astimezone(pytz.utc).isoformat()
     end_time_utc = end_datetime_local.astimezone(pytz.utc).isoformat()
     
-    # *** NEW: Check if location was scraped before asking the user ***
+    # Check if location was scraped before asking the user
     if scraped_location:
         return {"start_time": start_time_utc, "end_time": end_time_utc, "event_time_zone": timezone_str, **scraped_location}
 
@@ -163,7 +165,6 @@ def get_event_details_from_user(event_name, scraped_location=None):
         print("  Please provide the physical location:")
         event_location = {"name": input("  - Venue Name: "), "location": {"street": input("  - Street: "), "city": input("  - City: "), "state": input("  - State: "), "zip": input("  - Zip: "), "country": "US"}}
     return {"start_time": start_time_utc, "end_time": end_time_utc, "event_time_zone": timezone_str, "is_online": is_online, "place": event_location}
-
 
 def create_facebook_event(event_data, cover_photo_id=None):
     """Posts the final event data to the Facebook Graph API."""
@@ -248,16 +249,12 @@ def main():
             "cover_url": scraped_data["cover_url"],
             "start_time": user_event_details["start_time"],
             "end_time": user_event_details["end_time"],
-            "event_time_zone": user_event_details["event_time_zone"]
+            "event_time_zone": user_event_details["event_time_zone"],
+            "is_online": user_event_details.get("is_online", False),
+            "place": user_event_details.get("place", {})
         }
-        if "is_online" in user_event_details and user_event_details["is_online"]:
-            final_payload["is_online"] = True
-        elif "place" in user_event_details:
-            final_payload["place"] = user_event_details["place"]
-        
+
         create_facebook_event(final_payload, cover_photo_id)
-    
-    print(f"\n{'='*50}\nAll events processed.\n{'='*50}")
 
 if __name__ == "__main__":
     main()
