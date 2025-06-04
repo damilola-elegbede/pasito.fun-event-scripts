@@ -643,7 +643,7 @@ def preview_facebook_payload(event_data):
         f.write("\n".join(preview_output))
     print("\nSaved API preview to facebook_api_preview.txt")
 
-def process_single_event(event_id, preview=False):
+def process_single_event(event_id, preview=False, clean=False):
     """Process a single event ID and create a Facebook event or preview payload."""
     print(f"\n{'='*50}")
     print(f"Processing event ID: {event_id}")
@@ -691,6 +691,15 @@ def process_single_event(event_id, preview=False):
     
     if preview:
         print("\n[PREVIEW MODE] No event will be created.")
+        # Clean up temporary files if --clean flag is set
+        if clean:
+            for temp_file in ['raw.txt', 'facebook_api_preview.txt']:
+                try:
+                    if os.path.exists(temp_file):
+                        os.remove(temp_file)
+                        print(f"Cleaned up temporary file: {temp_file}")
+                except Exception as e:
+                    print(f"Warning: Could not remove temporary file {temp_file}: {e}")
         return True
     
     # Create the Facebook event
@@ -709,6 +718,7 @@ def main():
     parser.add_argument('--series', help='Series ID to scrape for event IDs')
     parser.add_argument('--prefix', help='Prefix to filter event IDs from series')
     parser.add_argument('--preview', action='store_true', help='Preview API payload without creating events')
+    parser.add_argument('--clean', action='store_true', help='Clean up temporary files after preview')
     args = parser.parse_args()
     
     # Check for required environment variables (skip if preview)
@@ -735,7 +745,7 @@ def main():
     failed = 0
     
     for event_id in event_ids:
-        if process_single_event(event_id, preview=args.preview):
+        if process_single_event(event_id, preview=args.preview, clean=args.clean):
             successful += 1
         else:
             failed += 1

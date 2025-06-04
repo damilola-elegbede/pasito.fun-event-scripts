@@ -80,9 +80,10 @@ python create_fb_event.py --series boulder-salsa-bachata-rueda-wc-swing-social-x
 
 ### Command-line Options
 
-- `--preview`: Preview the Facebook API payload without creating the event
-- `--series`: Process all events from a series
-- `--prefix`: Filter series events by prefix (optional)
+- `--preview`: Preview the Facebook API payload without creating events
+- `--clean`: Clean up temporary files after preview mode
+- `--series`: Process all events in a series (provide series ID)
+- `--prefix`: Filter event IDs by prefix when using --series
 
 ## How It Works
 
@@ -98,13 +99,54 @@ python create_fb_event.py --series boulder-salsa-bachata-rueda-wc-swing-social-x
 
 ## Output
 
-The script provides detailed output about:
-- Scraping progress
-- Location detection
-- Event creation status
-- Any errors or warnings
+When running in preview mode (`--preview`), the script creates two temporary files:
+- `raw.txt`: Contains the raw HTML from the scraped event page
+- `facebook_api_preview.txt`: Contains the preview of the Facebook API payload
 
-In preview mode, it saves the Facebook API payload to `facebook_api_preview.txt` for review.
+These files are automatically cleaned up if you use the `--clean` flag. If you don't use the flag, the files will remain for inspection.
+
+Example output:
+```
+==================================================
+Processing event ID: example-event-id
+==================================================
+✅ Successfully scraped event page
+📅 Date: Jun 12
+📍 Venue: Example Venue
+⏰ Time: 7:00 PM - 10:00 PM
+
+Facebook Event API Call Preview:
+POST https://graph.facebook.com/v19.0/{page-id}/events
+{
+  "name": "Example Event",
+  "description": "...",
+  "start_time": "2024-06-12T19:00:00-06:00",
+  "end_time": "2024-06-12T22:00:00-06:00",
+  "location": "Example Venue",
+  "place": {
+    "name": "Example Venue",
+    "location": {
+      "city": "Boulder",
+      "country": "United States",
+      "latitude": 40.0149,
+      "longitude": -105.2705,
+      "state": "CO",
+      "street": "123 Example St",
+      "zip": "80302"
+    }
+  }
+}
+
+[PREVIEW MODE] No event will be created.
+Saved API preview to facebook_api_preview.txt
+
+==================================================
+Event Creation Summary:
+Total events processed: 1
+Successful: 1
+Failed: 0
+==================================================
+```
 
 ## Error Handling
 
