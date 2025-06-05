@@ -111,9 +111,11 @@ python pasito_event_scraper.py -s "boulder-salsa-bachata-rueda-wc-swing-social-x
 
 ### Test Suite Overview
 
-The project includes a comprehensive test suite with **13 tests** covering:
+The project includes a comprehensive test suite with **24 tests** covering:
 
 - **Utility Functions** (7 tests): Series ID extraction, time parsing, error handling
+- **Argument Validation** (5 tests): Preview vs non-preview mode validation, missing credentials
+- **Facebook API Integration** (6 tests): Event creation, post creation, error handling, mocked API calls
 - **HTML Parsing** (6 tests): Real HTML structure validation, venue extraction, event details
 
 ### Running Tests
