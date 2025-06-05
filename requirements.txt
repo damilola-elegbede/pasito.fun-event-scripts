@@ -2,4 +2,5 @@ requests
 beautifulsoup4
 selenium
 pytz
-pytest 
+pytest
+lxml 
