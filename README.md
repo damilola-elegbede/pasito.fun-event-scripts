@@ -1,40 +1,34 @@
-# Pasito to Facebook Event Creator
+# Pasito Event Scripts
 
-This script automatically creates Facebook events from Pasito event pages. It can process individual events or entire series of events, making it easy to sync your dance events across platforms.
+This repository contains scripts for automating event management tasks for Pasito events.
 
-## Features
+## Facebook Event Creator
+
+The `create_fb_event.py` script automatically creates Facebook events from Pasito event pages. It can process individual events or entire series of events.
+
+### Features
 
 - 🎯 Process single events or entire series
-- 🌐 Automatically scrapes event details from Pasito
+- 🔍 Automatically scrapes event details from Pasito
 - 📍 Handles location details and venue information
-- 🌍 Translates non-English descriptions to English
+- 🌐 Translates non-English descriptions to English
 - 🔗 Adds source link to the event description
 - 👀 Preview mode for testing without creating events
-- 🕒 Handles timezone conversion automatically
+- 🧹 Cleanup option for temporary files
+- 🔄 Supports both event IDs and full URLs
 
-## Prerequisites
+### Prerequisites
 
-- Python 3.7 or higher
-- A Facebook Page with admin access
+- Python 3.8 or higher
+- Chrome browser installed
+- Facebook Page with admin access
 - Facebook Page Access Token with required permissions
-- Chrome browser (for Selenium)
 
-## Dependencies
-
-The script requires the following Python packages:
-- `requests>=2.31.0`: For making HTTP requests
-- `beautifulsoup4>=4.12.2`: For HTML parsing
-- `deep-translator>=1.11.4`: For text translation
-- `pytz>=2024.1`: For timezone handling
-- `python-dotenv>=1.0.0`: For environment variable management
-- `selenium>=4.18.1`: For web scraping
-- `webdriver-manager>=4.0.1`: For managing Chrome WebDriver
-
-## Installation
+### Installation
 
 1. Clone the repository:
    ```bash
-   git clone https://github.com/yourusername/pasito.fun-event-scripts.git
+   git clone https://github.com/damilola-elegbede/pasito.fun-event-scripts.git
    cd pasito.fun-event-scripts
    ```
 
@@ -45,153 +39,99 @@ The script requires the following Python packages:
 
 3. Set up environment variables:
    ```bash
-   # Set these in your shell or create a .env file
    export FB_PAGE_ID="your_page_id"
    export FB_PAGE_ACCESS_TOKEN="your_access_token"
    ```
+   Or create a `.env` file with these variables.
 
-## Facebook Setup
+### Facebook Setup
 
-1. Create a Facebook Page if you haven't already
-2. Get your Page ID from the About section of your Facebook Page
-3. Generate a Page Access Token with the following permissions:
+1. Create a Facebook Page if you don't have one
+2. Generate a Page Access Token with these permissions:
    - `pages_manage_events`
    - `pages_read_engagement`
 
-## Usage
+### Usage
 
-### Process a Single Event
+The script requires either `-e/--events` or `-s/--series` flag to be present.
 
-```bash
-python create_fb_event.py <event_id> [--preview]
+#### Process Single Events
 
-# Example:
-python create_fb_event.py blue-ice-bachata-night-r14by --preview
-```
-
-### Process Events from a Series
+You can provide event IDs or full URLs:
 
 ```bash
-python create_fb_event.py -s <series_id> [-p]
+# Using event IDs
+python create_fb_event.py -e event-id-1 event-id-2
 
-# Example:
-python create_fb_event.py -s boulder-salsa-bachata-rueda-wc-swing-social-xd9r4 -p
+# Using full URLs
+python create_fb_event.py -e https://pasito.fun/e/event-id-1 https://pasito.fun/e/event-id-2
+
+# Mix of IDs and URLs
+python create_fb_event.py -e event-id-1 https://pasito.fun/e/event-id-2
 ```
 
-### Command-line Options
+#### Process Series
 
-Required (one of):
-- `-e, --events`: One or more Pasito event IDs to process
-- `-s, --series`: Process all events in a series (provide series ID)
+You can provide a series ID or full URL:
+
+```bash
+# Using series ID
+python create_fb_event.py -s series-id
+
+# Using full URL
+python create_fb_event.py -s https://pasito.fun/es/series-id
+```
+
+#### Command-line Options
+
+Required:
+- `-e, --events`: One or more event IDs or full URLs (e.g., `https://pasito.fun/e/event-id`)
+- `-s, --series`: Series ID or full URL to scrape for event IDs
 
 Optional:
-- `-p, --preview`: Preview the Facebook API payload without creating events
-- `-c, --clean`: Clean up temporary files after preview mode
+- `-p, --preview`: Preview API payload without creating events
+- `-c, --clean`: Clean up temporary files after preview
 - `--page-id`: Facebook Page ID (overrides FB_PAGE_ID environment variable)
 - `--access-token`: Facebook Page Access Token (overrides FB_PAGE_ACCESS_TOKEN environment variable)
 
-Note: You must provide either `-e/--events` or `-s/--series`, but not both.
+### How It Works
 
-### Usage Examples
+1. **Event Scraping**:
+   - For single events: Scrapes the event page directly
+   - For series: Scrapes the series page to find all event links
 
-Process a single event with preview:
-```bash
-python create_fb_event.py -e blue-ice-bachata-night-r14by -p
-```
+2. **Data Processing**:
+   - Extracts event details (name, description, date, time)
+   - Handles location information
+   - Translates non-English descriptions
+   - Adds source link to description
 
-Process multiple events:
-```bash
-python create_fb_event.py -e event-id-1 event-id-2 event-id-3
-```
+3. **Facebook Integration**:
+   - Creates events using Facebook Graph API
+   - Handles timezone conversion
+   - Manages location details
 
-Process a series with preview and cleanup:
-```bash
-python create_fb_event.py -s boulder-salsa-bachata-rueda-wc-swing-social-xd9r4 -p -c
-```
+### Output
 
-Create an event with credentials provided via command line:
-```bash
-python create_fb_event.py -e event-id --page-id "123456789" --access-token "your_token_here"
-```
-
-## How It Works
-
-1. The script scrapes event details from Pasito using Selenium
-2. Extracts key information:
-   - Event name and description
-   - Date and time
-   - Location details
-   - Venue information
-3. Translates non-English content to English
-4. Adds a source link to the event description
-5. Creates the event on Facebook using the Graph API
-
-## Output
-
-When running in preview mode (`--preview`), the script creates two temporary files:
+The script generates two temporary files in preview mode:
 - `raw.txt`: Contains the raw HTML from the scraped event page
 - `facebook_api_preview.txt`: Contains the preview of the Facebook API payload
 
-These files are automatically cleaned up if you use the `--clean` flag. If you don't use the flag, the files will remain for inspection.
+These files are automatically cleaned up when using the `--clean` flag.
 
-Example output:
-```
-==================================================
-Processing event ID: example-event-id
-==================================================
-✅ Successfully scraped event page
-📅 Date: Jun 12
-📍 Venue: Example Venue
-⏰ Time: 7:00 PM - 10:00 PM
-
-Facebook Event API Call Preview:
-POST https://graph.facebook.com/v19.0/{page-id}/events
-{
-  "name": "Example Event",
-  "description": "...",
-  "start_time": "2024-06-12T19:00:00-06:00",
-  "end_time": "2024-06-12T22:00:00-06:00",
-  "location": "Example Venue",
-  "place": {
-    "name": "Example Venue",
-    "location": {
-      "city": "Boulder",
-      "country": "United States",
-      "latitude": 40.0149,
-      "longitude": -105.2705,
-      "state": "CO",
-      "street": "123 Example St",
-      "zip": "80302"
-    }
-  }
-}
-
-[PREVIEW MODE] No event will be created.
-Saved API preview to facebook_api_preview.txt
-
-==================================================
-Event Creation Summary:
-Total events processed: 1
-Successful: 1
-Failed: 0
-==================================================
-```
-
-## Error Handling
+### Error Handling
 
 The script includes comprehensive error handling for:
+- Invalid event IDs or URLs
+- Missing Facebook credentials
 - Network issues
-- Invalid URLs
-- Missing or invalid Facebook credentials
-- Translation failures
-- Invalid timezone inputs
-- Facebook API errors
-- Series scraping errors
+- Invalid date/time formats
+- Missing location information
 
-## Contributing
+### Contributing
 
-Feel free to submit issues and enhancement requests!
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-## License
+### License
 
-This project is licensed under the MIT License - see the LICENSE file for details. 
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details. 
