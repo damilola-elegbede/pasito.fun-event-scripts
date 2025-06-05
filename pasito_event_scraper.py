@@ -258,6 +258,130 @@ def get_series_events(series_id, browser_session):
     print(f"✅ Found {len(event_urls)} unique events in series")
     return list(event_urls)
 
+def create_facebook_event(event_data, access_token, page_id):
+    """Create a Facebook event using the Graph API"""
+    import requests
+    
+    # Facebook Graph API endpoint for creating page events
+    url = f"https://graph.facebook.com/v19.0/{page_id}/events"
+    
+    # Prepare event data for Facebook API
+    facebook_event_data = {
+        'name': event_data['name'],
+        'description': event_data['description'][:8000],  # Facebook limit
+        'start_time': event_data['start_time'],
+        'is_online': event_data.get('is_online', False),
+        'access_token': access_token
+    }
+    
+    # Add end time if available
+    if event_data.get('end_time'):
+        facebook_event_data['end_time'] = event_data['end_time']
+    
+    # Add cover photo if available
+    if event_data.get('cover_url'):
+        facebook_event_data['cover_url'] = event_data['cover_url']
+    
+    # Add venue information if it's not an online event
+    if not event_data.get('is_online', False) and event_data.get('place'):
+        if isinstance(event_data['place'], str):
+            # Simple venue name
+            facebook_event_data['place'] = {
+                'name': event_data['place']
+            }
+        elif isinstance(event_data['place'], dict):
+            # Structured venue data
+            facebook_event_data['place'] = event_data['place']
+    
+    try:
+        print(f"🌐 Creating Facebook event: {event_data['name']}")
+        response = requests.post(url, data=facebook_event_data, timeout=30)
+        response.raise_for_status()
+        
+        result = response.json()
+        
+        if 'id' in result:
+            event_id = result['id']
+            event_url = f"https://facebook.com/events/{event_id}"
+            print(f"✅ Facebook event created successfully!")
+            print(f"📱 Event ID: {event_id}")
+            print(f"🔗 Event URL: {event_url}")
+            return {
+                'success': True,
+                'event_id': event_id,
+                'event_url': event_url,
+                'response': result
+            }
+        else:
+            print(f"❌ Unexpected response format: {result}")
+            return {'success': False, 'error': 'Unexpected response format', 'response': result}
+            
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Network error creating Facebook event: {e}")
+        return {'success': False, 'error': f'Network error: {e}'}
+    except Exception as e:
+        print(f"❌ Error creating Facebook event: {e}")
+        return {'success': False, 'error': str(e)}
+
+def create_facebook_post_event(event_data, access_token, page_id):
+    """Create a Facebook post with event information as fallback"""
+    import requests
+    
+    # Facebook Graph API endpoint for creating page posts
+    url = f"https://graph.facebook.com/v19.0/{page_id}/feed"
+    
+    # Format event information as a post
+    venue_text = ""
+    if event_data.get('place'):
+        if isinstance(event_data['place'], str):
+            venue_text = f"\n📍 {event_data['place']}"
+        elif isinstance(event_data['place'], dict) and event_data['place'].get('name'):
+            venue_text = f"\n📍 {event_data['place']['name']}"
+    
+    time_text = ""
+    if event_data.get('start_time'):
+        time_text = f"\n⏰ {event_data['start_time']}"
+        if event_data.get('end_time'):
+            time_text += f" - {event_data['end_time']}"
+    
+    message = f"🎉 {event_data['name']}{time_text}{venue_text}\n\n{event_data.get('description', '')}"
+    
+    post_data = {
+        'message': message[:8000],  # Facebook limit
+        'access_token': access_token
+    }
+    
+    # Add cover photo if available
+    if event_data.get('cover_url'):
+        post_data['link'] = event_data['cover_url']
+    
+    try:
+        print(f"📝 Creating Facebook post for event: {event_data['name']}")
+        response = requests.post(url, data=post_data, timeout=30)
+        response.raise_for_status()
+        
+        result = response.json()
+        
+        if 'id' in result:
+            post_id = result['id']
+            print(f"✅ Facebook post created successfully!")
+            print(f"📱 Post ID: {post_id}")
+            return {
+                'success': True,
+                'post_id': post_id,
+                'response': result
+            }
+        else:
+            print(f"❌ Unexpected response format: {result}")
+            return {'success': False, 'error': 'Unexpected response format', 'response': result}
+            
+    except requests.exceptions.RequestException as e:
+        print(f"❌ Network error creating Facebook post: {e}")
+        return {'success': False, 'error': f'Network error: {e}'}
+    except Exception as e:
+        print(f"❌ Error creating Facebook post: {e}")
+        return {'success': False, 'error': str(e)}
+
 def main():
     parser = argparse.ArgumentParser(description='Efficiently scrape Pasito events for Facebook')
     parser.add_argument('-e', '--events', nargs='+', help='Pasito event URLs to scrape')
@@ -265,10 +389,26 @@ def main():
     parser.add_argument('-c', '--cover-image', help='URL of the cover image to use for Facebook events')
     parser.add_argument('-p', '--preview', action='store_true', help='Preview Facebook event call without making the call')
     parser.add_argument('-d', '--debug', action='store_true', help='Enable debug mode with HTML dumps')
+    
+    # Facebook API arguments for non-preview mode
+    parser.add_argument('-t', '--access-token', help='Facebook Page Access Token (required for non-preview mode)')
+    parser.add_argument('-i', '--page-id', help='Facebook Page ID (required for non-preview mode)')
+    parser.add_argument('--use-posts', action='store_true', help='Create Facebook posts instead of events (fallback option)')
+    
     args = parser.parse_args()
 
     if not args.events and not args.series:
         parser.error("Either -e/--events or -s/--series must be provided")
+    
+    # Validate Facebook API requirements for non-preview mode
+    if not args.preview:
+        if not args.access_token:
+            parser.error("Facebook access token (-t/--access-token) is required for non-preview mode")
+        if not args.page_id:
+            parser.error("Facebook page ID (-i/--page-id) is required for non-preview mode")
+        
+        print(f"🔐 Using Facebook Page ID: {args.page_id}")
+        print(f"🔑 Access token provided: {args.access_token[:20]}...")
 
     # Initialize shared browser session
     browser = BrowserSession()
@@ -287,6 +427,8 @@ def main():
 
         # Process each event efficiently
         results = []
+        facebook_results = []
+        
         for i, event_url in enumerate(events_to_process, 1):
             print(f"\n📝 Processing event {i}/{len(events_to_process)}: {event_url}")
             
@@ -315,13 +457,35 @@ def main():
                 print("\n📋 Facebook API JSON:")
                 print(json.dumps(event_data, indent=2))
                 print("-" * 60)
+            else:
+                # Create Facebook event/post
+                if args.use_posts:
+                    # Create Facebook post instead of event
+                    fb_result = create_facebook_post_event(event_data, args.access_token, args.page_id)
+                else:
+                    # Try to create Facebook event first
+                    fb_result = create_facebook_event(event_data, args.access_token, args.page_id)
+                    
+                    # Fallback to post if event creation fails
+                    if not fb_result['success'] and 'not supported' in str(fb_result.get('error', '')).lower():
+                        print("⚠️  Event creation not supported, falling back to post...")
+                        fb_result = create_facebook_post_event(event_data, args.access_token, args.page_id)
+                
+                facebook_results.append(fb_result)
+                
+                if fb_result['success']:
+                    print("✅ Facebook creation successful!")
+                else:
+                    print(f"❌ Facebook creation failed: {fb_result.get('error', 'Unknown error')}")
             
             results.append(event_data)
         
+        # Summary
         print(f"\n✅ Successfully processed {len(results)} events")
         
-        if not args.preview and results:
-            print("🔄 TODO: Implement Facebook event creation logic")
+        if not args.preview and facebook_results:
+            successful_fb = len([r for r in facebook_results if r['success']])
+            print(f"📱 Facebook operations: {successful_fb}/{len(facebook_results)} successful")
             
     except KeyboardInterrupt:
         print("\n⚠️  Process interrupted by user")
