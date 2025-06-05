@@ -33,6 +33,8 @@ ENV/
 # Debug files
 debug_raw_html.html
 debug_location_raw_html.html
+debug_event.html
+event_raw.html
 
 # Logs
 *.log
