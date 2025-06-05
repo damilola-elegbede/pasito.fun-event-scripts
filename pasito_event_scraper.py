@@ -391,8 +391,8 @@ def main():
     parser.add_argument('-d', '--debug', action='store_true', help='Enable debug mode with HTML dumps')
     
     # Facebook API arguments for non-preview mode
-    parser.add_argument('-t', '--access-token', help='Facebook Page Access Token (required for non-preview mode)')
-    parser.add_argument('-i', '--page-id', help='Facebook Page ID (required for non-preview mode)')
+    parser.add_argument('-t', '--access-token', help='Facebook Page Access Token (required when -p/--preview is not used)')
+    parser.add_argument('-i', '--page-id', help='Facebook Page ID (required when -p/--preview is not used)')
     parser.add_argument('--use-posts', action='store_true', help='Create Facebook posts instead of events (fallback option)')
     
     args = parser.parse_args()
@@ -402,13 +402,19 @@ def main():
     
     # Validate Facebook API requirements for non-preview mode
     if not args.preview:
+        missing_args = []
         if not args.access_token:
-            parser.error("Facebook access token (-t/--access-token) is required for non-preview mode")
+            missing_args.append("-t/--access-token")
         if not args.page_id:
-            parser.error("Facebook page ID (-i/--page-id) is required for non-preview mode")
+            missing_args.append("-i/--page-id")
+        
+        if missing_args:
+            parser.error(f"The following arguments are required when not in preview mode: {', '.join(missing_args)}")
         
         print(f"🔐 Using Facebook Page ID: {args.page_id}")
         print(f"🔑 Access token provided: {args.access_token[:20]}...")
+    else:
+        print("👁️  Running in preview mode - no Facebook API calls will be made")
 
     # Initialize shared browser session
     browser = BrowserSession()
