@@ -33,9 +33,9 @@ pip install -e .
 
 1. Create a `.env` file in the project root with the following variables:
 ```env
-FB_EMAIL=your_facebook_email
-FB_PASSWORD=your_facebook_password
-FB_GROUP_ID=your_facebook_group_id
+FB_EMAIL
+FB_PASSWORD
+FB_GROUP_ID
 ```
 
 2. Make sure you have Chrome browser installed for Selenium WebDriver.
