@@ -105,21 +105,86 @@ def upload_photo_for_event(image_path):
         print(f"\n❌ Error: Failed to upload photo. Status Code: {e.response.status_code}, Response: {e.response.text}")
         return None
 
-def scrape_series_for_event_ids(series_id):
-    """Scrapes a series page for event IDs."""
-    url = f"{BASE_PASITO_URL}/es/{series_id}"
-    print(f"\nScraping series page {url}...")
+def normalize_series_url(series_input):
+    """Convert series input to full URL with /events path."""
+    # If it's already a full URL, extract the series ID
+    if series_input.startswith('http'):
+        # Extract the series ID from the URL
+        series_id = series_input.split('/')[-1]
+    else:
+        # Assume it's just the series ID
+        series_id = series_input
+    
+    # Construct the full URL with /events path
+    return f"{BASE_PASITO_URL}/es/{series_id}/events"
+
+def scrape_series_for_event_ids(series_input):
+    """Scrapes a series page for event IDs using browser automation."""
+    url = normalize_series_url(series_input)
+    print(f"\nScraping series page: {url}...")
+    
+    driver = None
     try:
-        response = requests.get(url, timeout=10)
-        response.raise_for_status()
-        soup = BeautifulSoup(response.content, 'html.parser')
-        event_links = soup.select('a[href^="/e/"]')
-        event_ids = [link['href'].replace('/e/', '') for link in event_links]
+        driver = setup_webdriver()
+        driver.get(url)
+        
+        # Wait for the main content to load
+        WebDriverWait(driver, 10).until(
+            EC.presence_of_element_located((By.TAG_NAME, "body"))
+        )
+        
+        # Wait for event links to be present
+        try:
+            WebDriverWait(driver, 10).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, "a[href*='/e/']"))
+            )
+        except:
+            print("No event links found after waiting")
+            return []
+        
+        # Additional wait for dynamic content
+        time.sleep(2)
+        
+        # Get the page source after JavaScript has executed
+        page_source = driver.page_source
+        
+        # Save raw HTML to file
+        with open('raw.txt', 'w', encoding='utf-8') as f:
+            f.write(page_source)
+        print("Saved raw HTML to raw.txt")
+        
+        soup = BeautifulSoup(page_source, 'html.parser')
+        
+        # Find all event links (absolute and relative)
+        event_links = soup.find_all('a', href=True)
+        event_ids = set()
+        for link in event_links:
+            href = link['href']
+            # Match absolute URLs
+            abs_match = re.match(r'https://pasito.fun/e/([\w-]+)', href)
+            if abs_match:
+                event_ids.add(abs_match.group(1))
+                continue
+            # Match relative URLs
+            rel_match = re.match(r'/e/([\w-]+)', href)
+            if rel_match:
+                event_ids.add(rel_match.group(1))
+        
+        event_ids = list(event_ids)
+        
+        if not event_ids:
+            print("No event links found on the series page")
+            return []
+            
         print(f"Found {len(event_ids)} events: {', '.join(event_ids)}")
         return event_ids
-    except requests.RequestException as e:
-        print(f"Error: Could not fetch series page {series_id}. {e}")
+        
+    except Exception as e:
+        print(f"Error: Could not fetch series page. {e}")
         return []
+    finally:
+        if driver:
+            driver.quit()
 
 def find_location_links(soup):
     """Find location page links in the HTML and return the URL and venue name."""
@@ -711,8 +776,8 @@ def main():
     
     # Create a mutually exclusive group for event sources
     event_source = parser.add_mutually_exclusive_group(required=True)
-    event_source.add_argument('-e', '--events', nargs='+', help='One or more Pasito event IDs to process')
-    event_source.add_argument('-s', '--series', help='Series ID to scrape for event IDs')
+    event_source.add_argument('-e', '--events', nargs='+', help='One or more Pasito event IDs or full URLs (e.g., https://pasito.fun/e/event-id)')
+    event_source.add_argument('-s', '--series', help='Series ID or full URL to scrape for event IDs')
     
     # Other optional arguments
     parser.add_argument('-p', '--preview', action='store_true', help='Preview API payload without creating events')
@@ -741,9 +806,19 @@ def main():
     if args.series:
         event_ids.extend(scrape_series_for_event_ids(args.series))
     
-    # Add any explicitly provided event IDs
+    # Add any explicitly provided event IDs or URLs
     if args.events:
-        event_ids.extend(args.events)
+        for event_input in args.events:
+            # If it's a full URL, extract the event ID
+            if event_input.startswith('http'):
+                match = re.match(r'https://pasito\.fun/e/([\w-]+)', event_input)
+                if match:
+                    event_ids.append(match.group(1))
+                else:
+                    print(f"❌ Invalid event URL format: {event_input}")
+            else:
+                # Assume it's just the event ID
+                event_ids.append(event_input)
     
     if not event_ids:
         print("❌ No event IDs found to process")
