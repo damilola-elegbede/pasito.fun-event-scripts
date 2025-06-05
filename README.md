@@ -5,7 +5,9 @@ A robust web scraper for extracting dance event data from [Pasito.fun](https://p
 ## 🎯 Features
 
 - **Event Data Extraction**: Scrapes comprehensive event details (name, times, venue, description)
-- **Facebook API Ready**: Outputs clean JSON formatted for Facebook Graph API
+- **Facebook API Integration**: Direct Facebook event creation via Graph API v19.0
+- **Dual Mode Operation**: Preview mode for testing, production mode for live event creation
+- **Smart Fallbacks**: Automatic fallback to Facebook posts when events aren't supported
 - **Series Support**: Handles both individual events and event series
 - **Browser Optimization**: Efficient Selenium session management with performance optimizations
 - **Time Parsing**: Robust ISO 8601 time formatting with timezone support
@@ -18,6 +20,8 @@ A robust web scraper for extracting dance event data from [Pasito.fun](https://p
 
 - Python 3.8+
 - Chrome browser (for Selenium WebDriver)
+- Facebook Page with Admin access (for non-preview mode)
+- Facebook App with `pages_manage_events` permission (for non-preview mode)
 
 ### Installation
 
@@ -34,19 +38,56 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 ```
 
+### Facebook API Setup (For Non-Preview Mode)
+
+To create actual Facebook events, you'll need:
+
+#### 1. Facebook Page Access Token
+- Go to [Facebook Developers](https://developers.facebook.com/)
+- Create a Facebook App or use existing one
+- Add "Pages" product to your app
+- Generate a **Page Access Token** with `pages_manage_events` permission
+- For automation, convert to a **long-lived token** (60 days)
+
+#### 2. Facebook Page ID
+- Go to your Facebook Page
+- Click **Settings** → **About** → **Page ID**
+- Copy the numeric Page ID (e.g., `123456789012345`)
+
+#### 3. Required Command Line Arguments
+- `-t` or `--access-token`: Your Facebook Page Access Token
+- `-i` or `--page-id`: Your Facebook Page ID
+- `--use-posts`: Use this flag if event creation fails (creates posts instead)
+
 ### Usage
 
-#### Scrape Individual Event
+#### Preview Mode (Default)
 ```bash
-python pasito_event_scraper.py -e "https://pasito.fun/event/your-event-url"
+# Scrape individual event (preview only)
+python pasito_event_scraper.py -e "https://pasito.fun/event/your-event-url" -p
+
+# Scrape event series (preview only)
+python pasito_event_scraper.py -s "boulder-salsa-bachata-rueda-wc-swing-social-xd9r4" -p
 ```
 
-#### Scrape Event Series
+#### Create Facebook Events (Non-Preview Mode)
 ```bash
-python pasito_event_scraper.py -s "boulder-salsa-bachata-rueda-wc-swing-social-xd9r4"
+# Create Facebook events from individual event
+python pasito_event_scraper.py -e "https://pasito.fun/event/your-event-url" \
+  -t "YOUR_FACEBOOK_ACCESS_TOKEN" -i "YOUR_PAGE_ID"
+
+# Create Facebook events from event series
+python pasito_event_scraper.py -s "boulder-salsa-bachata-rueda-wc-swing-social-xd9r4" \
+  -t "YOUR_FACEBOOK_ACCESS_TOKEN" -i "YOUR_PAGE_ID"
+
+# Create Facebook posts instead of events (fallback mode)
+python pasito_event_scraper.py -s "boulder-salsa-bachata-rueda-wc-swing-social-xd9r4" \
+  -t "YOUR_FACEBOOK_ACCESS_TOKEN" -i "YOUR_PAGE_ID" --use-posts
 ```
 
 ### Example Output
+
+#### Preview Mode Output
 ```json
 {
   "name": "Boulder Salsa, Bachata, Rueda, & WC Swing Social",
@@ -55,6 +96,15 @@ python pasito_event_scraper.py -s "boulder-salsa-bachata-rueda-wc-swing-social-x
   "place": "The Avalon Ballroom",
   "description": "Join us for an evening of dancing! Salsa, Bachata, Rueda de Casino..."
 }
+```
+
+#### Non-Preview Mode Output
+```bash
+🌐 Creating Facebook event: Boulder Salsa, Bachata, Rueda, & WC Swing Social
+✅ Facebook event created successfully!
+📱 Event ID: 1234567890123456
+🔗 Event URL: https://facebook.com/events/1234567890123456
+📱 Facebook operations: 3/3 successful
 ```
 
 ## 🧪 Testing Framework
@@ -200,6 +250,38 @@ pasito.fun-event-scripts/
 3. Make changes and ensure tests pass: `pytest -v`
 4. Commit changes (pre-commit hook will validate)
 5. Push to branch and create pull request
+
+## 🔧 Troubleshooting
+
+### Facebook API Issues
+
+#### "Event creation not supported"
+- Use `--use-posts` flag to create Facebook posts instead of events
+- Facebook has deprecated event creation for many page types
+
+#### "Invalid access token"
+- Ensure your access token has `pages_manage_events` permission
+- Verify the token hasn't expired (use long-lived tokens for automation)
+- Check that you're using a **Page Access Token**, not a User Access Token
+
+#### "Permissions error"
+- Confirm you're an admin of the Facebook Page
+- Verify the Page ID is correct (numeric format)
+- Ensure your Facebook App has the necessary permissions
+
+### Browser Issues
+
+#### "Browser not available"
+- Install Chrome browser
+- Check ChromeDriver compatibility with your Chrome version
+- Script will fallback to requests-only mode if browser fails
+
+### Data Parsing Issues
+
+#### "Failed to extract event data"
+- Use `-d` flag to enable debug mode and inspect HTML
+- Check if Pasito.fun website structure has changed
+- Verify the event URL is accessible and valid
 
 ## 📄 License
 
